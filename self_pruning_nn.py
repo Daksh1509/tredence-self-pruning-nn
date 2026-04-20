@@ -81,6 +81,9 @@ class PrunableLinear(nn.Module):
         nn.init.kaiming_uniform_(self.weight, nonlinearity='relu')
 
     def forward(self, x: torch.Tensor, hard: bool = False) -> torch.Tensor:
+    # Convert unconstrained gate scores into values between 0 and 1.
+    # A high gate value means the corresponding weight should stay active.
+    # A low gate value means the weight should be suppressed or pruned.
         gates = torch.sigmoid(self.gate_scores)
 
         if hard:
@@ -145,6 +148,10 @@ class SelfPruningNet(nn.Module):
 # =============================================================================
 # 3. SPARSITY LOSS FUNCTION
 # =============================================================================
+# This function computes the L1 penalty on all gate values in the network.
+# Since gates are sigmoid outputs, they are always positive, so the L1 norm
+# becomes a simple sum. Minimizing this term encourages more gates to move
+# toward zero, which means more weights become effectively pruned.
 
 def sparsity_loss(model: SelfPruningNet) -> torch.Tensor:
     """
@@ -551,10 +558,3 @@ if __name__ == "__main__":
             f"{r['sparsity']*100:>9.2f}%"
             f"{r['soft_ms']:>10.2f}"
         )
-
-    print("\n[DONE] All outputs saved. Submit the following files:")
-    print("  • self_pruning_nn.py")
-    print("  • gate_distribution.png")
-    print("  • accuracy_vs_sparsity.png")
-    print("  • loss_curves.png")
-    print("  • report.md")
